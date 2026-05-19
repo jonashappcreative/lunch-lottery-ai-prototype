@@ -122,29 +122,31 @@ function DrawPage() {
         </Card>
       )}
 
-      <div className={`grid ${gridClass} gap-3 md:gap-4 flex-1 min-h-0 auto-rows-fr`}>
-        {Array.from({ length: cfg.totalCards }).map((_, i) => {
-          const icon = CARD_ICONS[i % CARD_ICONS.length];
-          const opened = draw.openedCards.find((c) => c.cardIndex === i);
-          const winner = opened
-            ? state.employees.find((e) => e.id === opened.employeeId)
-            : undefined;
-          return (
-            <LotteryCard
-              key={i}
-              index={i}
-              Icon={icon.Icon}
-              iconLabel={icon.label}
-              opened={!!opened}
-              disabled={completed && !opened}
-              winnerName={winner?.name}
-              winnerDepartment={winner?.department}
-              order={opened?.order}
-              onClick={() => handleCardClick(i)}
-            />
-          );
-        })}
-      </div>
+      {!completed && (
+        <div className={`grid ${gridClass} gap-3 md:gap-4 flex-1 min-h-0 auto-rows-fr`}>
+          {Array.from({ length: cfg.totalCards }).map((_, i) => {
+            const icon = CARD_ICONS[i % CARD_ICONS.length];
+            const opened = draw.openedCards.find((c) => c.cardIndex === i);
+            const winner = opened
+              ? state.employees.find((e) => e.id === opened.employeeId)
+              : undefined;
+            return (
+              <LotteryCard
+                key={i}
+                index={i}
+                Icon={icon.Icon}
+                iconLabel={icon.label}
+                opened={!!opened}
+                disabled={completed && !opened}
+                winnerName={winner?.name}
+                winnerDepartment={winner?.department}
+                order={opened?.order}
+                onClick={() => handleCardClick(i)}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {completed && (
         <section className="mt-12 animate-pop-in">
