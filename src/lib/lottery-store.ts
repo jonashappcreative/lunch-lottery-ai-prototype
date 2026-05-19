@@ -6,6 +6,16 @@ import {
   type LocationConfig,
   type LocationId,
 } from "./locations";
+import { supabase } from "@/integrations/supabase/client";
+
+const LOC_TO_DB: Record<LocationId, string> = {
+  hamburg: "Hamburg",
+  duesseldorf: "Düsseldorf",
+};
+const DB_TO_LOC: Record<string, LocationId> = {
+  Hamburg: "hamburg",
+  "Düsseldorf": "duesseldorf",
+};
 
 export type Employee = SampleEmployee;
 
