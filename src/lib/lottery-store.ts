@@ -244,14 +244,16 @@ export function saveRound() {
     .sort((a, b) => a.order - b.order)
     .map((oc) => {
       const e = state.employees.find((x) => x.id === oc.employeeId)!;
-      return { id: e.id, name: e.name, department: e.department };
+      return { id: e.id, name: e.name, department: e.department, order: oc.order };
     });
+  const poolSize = state.employees.filter((e) => e.location === loc && e.eligible).length;
+  const localRoundId = `round_${Date.now().toString(36)}`;
   const round: LotteryRound = {
-    id: `round_${Date.now().toString(36)}`,
+    id: localRoundId,
     date: new Date().toISOString(),
     location: loc,
-    winners,
-    poolSize: state.employees.filter((e) => e.location === loc && e.eligible).length,
+    winners: winners.map(({ id, name, department }) => ({ id, name, department })),
+    poolSize,
   };
   const winnerIds = new Set(winners.map((w) => w.id));
 
@@ -292,7 +294,6 @@ export function saveRound() {
       return e;
     });
 
-    // Reorder only within the location
     const others = withWinners.filter((e) => e.location !== loc);
     const locOnly = withWinners.filter((e) => e.location === loc);
     const nonWinners = locOnly.filter((e) => !winnerIds.has(e.id));
@@ -307,6 +308,65 @@ export function saveRound() {
       drawByLocation: { ...s.drawByLocation, [loc]: emptyDraw() },
     };
   });
+
+  void persistRound(loc, winners, poolSize, localRoundId);
+}
+
+async function persistRound(
+  loc: LocationId,
+  winners: { id: string; name: string; department: string; order: number }[],
+  poolSize: number,
+  localRoundId: string,
+) {
+  try {
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!winners.every((w) => uuidRe.test(w.id))) return;
+
+    const { data: roundRow, error: rErr } = await supabase
+      .from("rounds")
+      .insert({ location: LOC_TO_DB[loc], pool_size: poolSize })
+      .select("id")
+      .single();
+    if (rErr || !roundRow) return;
+
+    const dbRoundId = roundRow.id as string;
+
+    await supabase.from("round_winners").insert(
+      winners.map((w) => ({
+        round_id: dbRoundId,
+        employee_id: w.id,
+        employee_name: w.name,
+        employee_department: w.department,
+        reveal_order: w.order,
+      })),
+    );
+
+    await Promise.all(
+      winners.map((w) => {
+        const dc = state.employees.find((e) => e.id === w.id)?.drawCount ?? 1;
+        return supabase
+          .from("employees")
+          .update({
+            draw_count: dc,
+            last_won_round_id: dbRoundId,
+            blocked_until_threshold_met: true,
+            drawn_since_block: [],
+            eligible: false,
+          })
+          .eq("id", w.id);
+      }),
+    );
+
+    setState((s) => ({
+      ...s,
+      rounds: s.rounds.map((r) => (r.id === localRoundId ? { ...r, id: dbRoundId } : r)),
+      employees: s.employees.map((e) =>
+        e.lastWonRoundId === localRoundId ? { ...e, lastWonRoundId: dbRoundId } : e,
+      ),
+    }));
+  } catch {
+    /* ignore */
+  }
 }
 
 export function resetEligibility(loc?: LocationId) {
