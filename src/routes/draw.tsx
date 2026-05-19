@@ -61,8 +61,9 @@ function DrawPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <div className={`mx-auto max-w-7xl px-6 py-4 ${completed ? "" : "h-[calc(100svh-5rem)] flex flex-col overflow-hidden"}`}>
+
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-4 shrink-0">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <LocationSwitcher />
@@ -121,7 +122,7 @@ function DrawPage() {
         </Card>
       )}
 
-      <div className={`grid ${gridClass} gap-3 md:gap-5`}>
+      <div className={`grid ${gridClass} gap-3 md:gap-4 flex-1 min-h-0 auto-rows-fr`}>
         {Array.from({ length: cfg.totalCards }).map((_, i) => {
           const icon = CARD_ICONS[i % CARD_ICONS.length];
           const opened = draw.openedCards.find((c) => c.cardIndex === i);

@@ -30,7 +30,7 @@ export function LotteryCard({
       disabled={opened || disabled}
       aria-label={opened ? `Gewinner ${order}: ${winnerName}` : `Karte ${iconLabel}`}
       className={cn(
-        "flip-card aspect-[4/5] w-full focus:outline-none group",
+        "flip-card h-full w-full min-h-0 focus:outline-none group",
         opened && "flipped",
       )}
     >
@@ -50,8 +50,8 @@ export function LotteryCard({
             disabled && !opened && "opacity-40 grayscale",
           )}
         >
-          <Icon className="h-16 w-16 md:h-20 md:w-20" strokeWidth={1.5} />
-          <span className="text-sm md:text-base font-medium opacity-90">{iconLabel}</span>
+          <Icon className="h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20" strokeWidth={1.5} />
+          <span className="text-xs md:text-sm lg:text-base font-medium opacity-90">{iconLabel}</span>
         </div>
         {/* Back */}
         <div className="flip-face flip-back flex flex-col items-center justify-center gap-2 p-4 bg-card border-2 border-primary/30 shadow-elevated text-center">
