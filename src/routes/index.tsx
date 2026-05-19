@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useLottery, eligibleCount, WINNERS_PER_ROUND } from "@/lib/lottery-store";
+import { LocationSwitcher } from "@/components/LocationSwitcher";
+import {
+  useLottery, eligibleCount, currentDraw, currentLocationConfig,
+  locationEmployees,
+} from "@/lib/lottery-store";
 import { ArrowRight, History, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -16,20 +20,26 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const state = useLottery();
-  const drawn = state.openedCards.length;
+  const cfg = currentLocationConfig(state);
+  const draw = currentDraw(state);
+  const drawn = draw.openedCards.length;
   const eligible = eligibleCount(state);
-  const recent = state.rounds.slice(0, 5);
+  const total = locationEmployees(state, cfg.id).length;
+  const recent = state.rounds.filter((r) => r.location === cfg.id).slice(0, 5);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-12 md:py-20">
       <div className="text-center space-y-6">
+        <div className="flex justify-center">
+          <LocationSwitcher />
+        </div>
         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
-          <Sparkles className="h-4 w-4" /> Alle zwei Wochen frisch gezogen
+          <Sparkles className="h-4 w-4" /> {cfg.cadence} · {cfg.winnersPerRound} Gewinner:innen
         </span>
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight">Lunch Lottery</h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-          Wählt nacheinander sechs Karten aus. Jede Karte enthüllt eine Gewinner:in für euer nächstes
-          gemeinsames Lunch.
+          {cfg.label}: Wählt nacheinander {cfg.winnersPerRound === 1 ? "eine Karte" : `${cfg.winnersPerRound} Karten`} aus.
+          Jede Karte enthüllt eine Gewinner:in für euer nächstes gemeinsames Lunch.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
           <Button asChild size="lg" className="text-base h-12 px-6">
@@ -42,14 +52,14 @@ function Index() {
           </Button>
         </div>
         <p className="text-sm text-muted-foreground pt-2">
-          {drawn} von {WINNERS_PER_ROUND} Gewinner:innen in der aktuellen Runde gezogen
+          {drawn} von {cfg.winnersPerRound} Gewinner:innen in der aktuellen Runde gezogen
         </p>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mt-16">
-        <StatCard icon={<Users className="h-5 w-5" />} label="Mitarbeitende" value={state.employees.length} />
+        <StatCard icon={<Users className="h-5 w-5" />} label={`Mitarbeitende ${cfg.label}`} value={total} />
         <StatCard icon={<Sparkles className="h-5 w-5" />} label="Verfügbar (eligible)" value={eligible} />
-        <StatCard icon={<History className="h-5 w-5" />} label="Abgeschlossene Runden" value={state.rounds.length} />
+        <StatCard icon={<History className="h-5 w-5" />} label={`Runden ${cfg.label}`} value={recent.length} />
       </div>
 
       <section className="mt-16">
