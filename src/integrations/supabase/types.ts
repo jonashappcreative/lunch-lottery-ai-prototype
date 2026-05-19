@@ -14,7 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      employees: {
+        Row: {
+          avatar_url: string | null
+          blocked_until_threshold_met: boolean
+          created_at: string
+          department: string
+          draw_count: number
+          drawn_since_block: string[]
+          eligible: boolean
+          id: string
+          last_won_round_id: string | null
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          blocked_until_threshold_met?: boolean
+          created_at?: string
+          department?: string
+          draw_count?: number
+          drawn_since_block?: string[]
+          eligible?: boolean
+          id?: string
+          last_won_round_id?: string | null
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          blocked_until_threshold_met?: boolean
+          created_at?: string
+          department?: string
+          draw_count?: number
+          drawn_since_block?: string[]
+          eligible?: boolean
+          id?: string
+          last_won_round_id?: string | null
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      round_winners: {
+        Row: {
+          created_at: string
+          employee_department: string
+          employee_id: string
+          employee_name: string
+          id: string
+          reveal_order: number
+          round_id: string
+        }
+        Insert: {
+          created_at?: string
+          employee_department: string
+          employee_id: string
+          employee_name: string
+          id?: string
+          reveal_order: number
+          round_id: string
+        }
+        Update: {
+          created_at?: string
+          employee_department?: string
+          employee_id?: string
+          employee_name?: string
+          id?: string
+          reveal_order?: number
+          round_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_winners_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_winners_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rounds: {
+        Row: {
+          created_at: string
+          drawn_at: string
+          id: string
+          pool_size: number
+        }
+        Insert: {
+          created_at?: string
+          drawn_at?: string
+          id?: string
+          pool_size: number
+        }
+        Update: {
+          created_at?: string
+          drawn_at?: string
+          id?: string
+          pool_size?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
