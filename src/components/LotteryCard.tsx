@@ -30,7 +30,7 @@ export function LotteryCard({
       disabled={opened || disabled}
       aria-label={opened ? `Gewinner ${order}: ${winnerName}` : `Karte ${iconLabel}`}
       className={cn(
-        "flip-card aspect-[4/5] w-full focus:outline-none group",
+        "flip-card h-full w-full min-h-0 focus:outline-none group",
         opened && "flipped",
       )}
     >
