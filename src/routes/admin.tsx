@@ -138,7 +138,7 @@ function AdminPage() {
 
       <div>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h2 className="text-xl font-bold">Mitarbeitende ({state.employees.length})</h2>
+          <h2 className="text-xl font-bold">Mitarbeitende {state.selectedLocation === "hamburg" ? "Hamburg" : "Düsseldorf"} ({employeesInLocation.length})</h2>
           <Input placeholder="Suchen…" value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-xs" />
         </div>
         <Card className="overflow-hidden">
