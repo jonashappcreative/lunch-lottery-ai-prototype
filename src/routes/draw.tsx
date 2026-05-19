@@ -7,10 +7,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { LotteryCard } from "@/components/LotteryCard";
+import { LocationSwitcher } from "@/components/LocationSwitcher";
 import { CARD_ICONS } from "@/lib/card-icons";
 import {
   useLottery, drawCardForEmployee, saveRound, startNewRound,
-  resetEligibility, WINNERS_PER_ROUND, TOTAL_CARDS, eligibleCount,
+  resetEligibility, eligibleCount, currentDraw, currentLocationConfig,
 } from "@/lib/lottery-store";
 import { toast } from "sonner";
 import { PartyPopper, RotateCcw, Save } from "lucide-react";
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/draw")({
   head: () => ({
     meta: [
       { title: "Ziehung — Lunch Lottery" },
-      { name: "description", content: "Live-Ziehung der nächsten sechs Lunch-Gewinner:innen." },
+      { name: "description", content: "Live-Ziehung der nächsten Lunch-Gewinner:innen." },
     ],
   }),
   component: DrawPage,
@@ -27,11 +28,13 @@ export const Route = createFileRoute("/draw")({
 
 function DrawPage() {
   const state = useLottery();
-  const drawn = state.openedCards.length;
+  const cfg = currentLocationConfig(state);
+  const draw = currentDraw(state);
+  const drawn = draw.openedCards.length;
   const eligible = eligibleCount(state);
-  const completed = state.roundCompleted;
+  const completed = draw.roundCompleted;
 
-  const winnersList = state.openedCards
+  const winnersList = draw.openedCards
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((oc) => {
@@ -39,7 +42,11 @@ function DrawPage() {
       return { order: oc.order, name: e?.name ?? "—", department: e?.department };
     });
 
-  const enoughPool = eligible >= WINNERS_PER_ROUND;
+  const enoughPool = eligible >= cfg.winnersPerRound;
+  const gridClass =
+    cfg.gridCols === 3
+      ? "grid-cols-2 sm:grid-cols-3"
+      : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4";
 
   function handleCardClick(cardIndex: number) {
     if (completed) return;
@@ -57,11 +64,17 @@ function DrawPage() {
     <div className="mx-auto max-w-7xl px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Ziehung</h1>
+          <div className="flex items-center gap-3 mb-2">
+            <LocationSwitcher />
+            <span className="text-xs text-muted-foreground">{cfg.cadence}</span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+            Ziehung · {cfg.label}
+          </h1>
           <p className="text-muted-foreground mt-1">
             {completed
               ? "Runde abgeschlossen — speichert sie oder bereitet eine neue vor."
-              : `Wählt eine Karte aus · ${drawn} von ${WINNERS_PER_ROUND} gezogen`}
+              : `Wählt eine Karte aus · ${drawn} von ${cfg.winnersPerRound} gezogen`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -79,7 +92,7 @@ function DrawPage() {
       {!enoughPool && drawn === 0 && (
         <Card className="p-5 mb-6 border-destructive/40 bg-destructive/5">
           <p className="font-medium text-foreground">
-            Nicht genügend verfügbare Mitarbeitende für eine faire Ziehung.
+            Nicht genügend verfügbare Mitarbeitende für eine faire Ziehung in {cfg.label}.
           </p>
           <p className="text-sm text-muted-foreground mt-1">
             Es sind nur {eligible} eligible Mitarbeitende vorhanden. Die 80%-Sperre kann administrativ
@@ -91,9 +104,10 @@ function DrawPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Alle Sperren aufheben?</AlertDialogTitle>
+                <AlertDialogTitle>Sperren in {cfg.label} aufheben?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Damit werden alle Mitarbeitenden wieder ziehungsberechtigt. Die Historie bleibt erhalten.
+                  Damit werden alle Mitarbeitenden in {cfg.label} wieder ziehungsberechtigt.
+                  Die Historie bleibt erhalten.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -107,10 +121,10 @@ function DrawPage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-5">
-        {Array.from({ length: TOTAL_CARDS }).map((_, i) => {
+      <div className={`grid ${gridClass} gap-3 md:gap-5`}>
+        {Array.from({ length: cfg.totalCards }).map((_, i) => {
           const icon = CARD_ICONS[i % CARD_ICONS.length];
-          const opened = state.openedCards.find((c) => c.cardIndex === i);
+          const opened = draw.openedCards.find((c) => c.cardIndex === i);
           const winner = opened
             ? state.employees.find((e) => e.id === opened.employeeId)
             : undefined;
@@ -139,8 +153,12 @@ function DrawPage() {
                 <PartyPopper className="h-6 w-6" />
               </span>
               <div>
-                <h2 className="text-2xl md:text-3xl font-bold">Lunch Lottery abgeschlossen</h2>
-                <p className="text-muted-foreground">Eure sechs Gewinner:innen für das nächste Lunch</p>
+                <h2 className="text-2xl md:text-3xl font-bold">Lunch Lottery {cfg.label} abgeschlossen</h2>
+                <p className="text-muted-foreground">
+                  {cfg.winnersPerRound === 1
+                    ? "Eure Gewinner:in für das nächste Lunch"
+                    : `Eure ${cfg.winnersPerRound} Gewinner:innen für das nächste Lunch`}
+                </p>
               </div>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
