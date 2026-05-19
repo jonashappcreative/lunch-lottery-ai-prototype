@@ -106,6 +106,55 @@ function hydrate() {
   hydrated = true;
   state = load();
   emit();
+  void loadFromSupabase();
+}
+
+async function loadFromSupabase() {
+  try {
+    const [empRes, roundsRes, winnersRes] = await Promise.all([
+      supabase.from("employees").select("*").order("sort_order", { ascending: true }),
+      supabase.from("rounds").select("*").order("drawn_at", { ascending: false }),
+      supabase.from("round_winners").select("*").order("reveal_order", { ascending: true }),
+    ]);
+    if (empRes.error || !empRes.data?.length) return;
+
+    const employees: Employee[] = empRes.data.map((e) => ({
+      id: e.id,
+      name: e.name,
+      department: e.department,
+      location: DB_TO_LOC[e.location] ?? "hamburg",
+      drawCount: e.draw_count,
+      eligible: e.eligible,
+      blockedUntilThresholdMet: e.blocked_until_threshold_met,
+      drawnSinceBlock: (e.drawn_since_block as string[]) ?? [],
+      lastWonRoundId: e.last_won_round_id ?? undefined,
+    }));
+
+    const winnersByRound = new Map<string, typeof winnersRes.data>();
+    for (const w of winnersRes.data ?? []) {
+      const arr = winnersByRound.get(w.round_id) ?? [];
+      arr.push(w);
+      winnersByRound.set(w.round_id, arr);
+    }
+    const rounds: LotteryRound[] = (roundsRes.data ?? []).map((r) => ({
+      id: r.id,
+      date: r.drawn_at,
+      location: DB_TO_LOC[r.location] ?? "hamburg",
+      poolSize: r.pool_size,
+      winners: (winnersByRound.get(r.id) ?? [])
+        .slice()
+        .sort((a, b) => a.reveal_order - b.reveal_order)
+        .map((w) => ({
+          id: w.employee_id,
+          name: w.employee_name,
+          department: w.employee_department,
+        })),
+    }));
+
+    setState((s) => ({ ...s, employees, rounds }));
+  } catch {
+    /* ignore — keep local state */
+  }
 }
 
 export function useLottery(): LotteryState {
