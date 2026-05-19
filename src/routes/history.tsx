@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Card } from "@/components/ui/card";
+import { LocationSwitcher } from "@/components/LocationSwitcher";
 import { useLottery } from "@/lib/lottery-store";
+import { LOCATIONS } from "@/lib/locations";
 
 export const Route = createFileRoute("/history")({
   head: () => ({
@@ -13,15 +15,23 @@ export const Route = createFileRoute("/history")({
 });
 
 function HistoryPage() {
-  const { rounds } = useLottery();
+  const state = useLottery();
+  const rounds = state.rounds.filter((r) => r.location === state.selectedLocation);
+  const cfg = LOCATIONS[state.selectedLocation];
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Historie</h1>
-      <p className="text-muted-foreground mt-1 mb-8">{rounds.length} gespeicherte Runden</p>
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Historie · {cfg.label}</h1>
+          <p className="text-muted-foreground mt-1">{rounds.length} gespeicherte Runden · {cfg.cadence}</p>
+        </div>
+        <LocationSwitcher />
+      </div>
 
       {rounds.length === 0 ? (
         <Card className="p-10 text-center text-muted-foreground">
-          Noch keine Runden gespeichert.
+          Noch keine Runden in {cfg.label} gespeichert.
         </Card>
       ) : (
         <div className="space-y-4">
@@ -31,6 +41,9 @@ function HistoryPage() {
                 <div className="flex items-baseline gap-3">
                   <span className="text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded-full">
                     Runde #{rounds.length - idx}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-accent-foreground bg-accent px-2 py-1 rounded-full">
+                    {LOCATIONS[r.location].label}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {new Date(r.date).toLocaleString("de-DE", { dateStyle: "long", timeStyle: "short" })}
