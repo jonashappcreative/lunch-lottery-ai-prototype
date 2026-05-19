@@ -1,11 +1,18 @@
 import { useSyncExternalStore } from "react";
 import { generateSampleEmployees, type SampleEmployee } from "./sample-employees";
+import {
+  LOCATIONS,
+  UNBLOCK_THRESHOLD,
+  type LocationConfig,
+  type LocationId,
+} from "./locations";
 
 export type Employee = SampleEmployee;
 
 export type LotteryRound = {
   id: string;
   date: string;
+  location: LocationId;
   winners: { id: string; name: string; department: string }[];
   poolSize: number;
 };
@@ -13,27 +20,37 @@ export type LotteryRound = {
 export type OpenedCard = {
   cardIndex: number;
   employeeId: string;
-  order: number; // 1..6
+  order: number;
+};
+
+type LocationDrawState = {
+  openedCards: OpenedCard[];
+  roundCompleted: boolean;
 };
 
 export type LotteryState = {
   employees: Employee[];
   rounds: LotteryRound[];
-  openedCards: OpenedCard[];
-  roundCompleted: boolean;
+  selectedLocation: LocationId;
+  drawByLocation: Record<LocationId, LocationDrawState>;
 };
 
-const STORAGE_KEY = "lunch-lottery-state-v1";
-export const UNBLOCK_THRESHOLD = 0.8;
-export const WINNERS_PER_ROUND = 6;
-export const TOTAL_CARDS = 16;
+const STORAGE_KEY = "lunch-lottery-state-v2";
+export { UNBLOCK_THRESHOLD };
+
+function emptyDraw(): LocationDrawState {
+  return { openedCards: [], roundCompleted: false };
+}
 
 function initialState(): LotteryState {
   return {
-    employees: generateSampleEmployees(150),
+    employees: generateSampleEmployees(),
     rounds: [],
-    openedCards: [],
-    roundCompleted: false,
+    selectedLocation: "hamburg",
+    drawByLocation: {
+      hamburg: emptyDraw(),
+      duesseldorf: emptyDraw(),
+    },
   };
 }
 
@@ -44,6 +61,11 @@ function load(): LotteryState {
     if (!raw) return initialState();
     const parsed = JSON.parse(raw) as LotteryState;
     if (!parsed.employees?.length) return initialState();
+    // backfill defaults
+    if (!parsed.drawByLocation) {
+      parsed.drawByLocation = { hamburg: emptyDraw(), duesseldorf: emptyDraw() };
+    }
+    if (!parsed.selectedLocation) parsed.selectedLocation = "hamburg";
     return parsed;
   } catch {
     return initialState();
@@ -88,38 +110,77 @@ export function useLottery(): LotteryState {
   );
 }
 
+// ---------- Selectors ----------
+
+export function currentLocationConfig(s: LotteryState): LocationConfig {
+  return LOCATIONS[s.selectedLocation];
+}
+
+export function locationEmployees(s: LotteryState, loc: LocationId): Employee[] {
+  return s.employees.filter((e) => e.location === loc);
+}
+
+export function eligibleCount(s: LotteryState, loc?: LocationId): number {
+  const l = loc ?? s.selectedLocation;
+  return s.employees.filter((e) => e.location === l && e.eligible).length;
+}
+
+export function currentDraw(s: LotteryState): LocationDrawState {
+  return s.drawByLocation[s.selectedLocation] ?? emptyDraw();
+}
+
 // ---------- Actions ----------
 
-export function drawCardForEmployee(cardIndex: number): Employee | null {
-  if (state.roundCompleted) return null;
-  if (state.openedCards.length >= WINNERS_PER_ROUND) return null;
-  if (state.openedCards.some((c) => c.cardIndex === cardIndex)) return null;
+export function setLocation(loc: LocationId) {
+  setState((s) => ({ ...s, selectedLocation: loc }));
+}
 
-  const alreadyDrawn = new Set(state.openedCards.map((c) => c.employeeId));
+export function drawCardForEmployee(cardIndex: number): Employee | null {
+  const loc = state.selectedLocation;
+  const cfg = LOCATIONS[loc];
+  const draw = state.drawByLocation[loc] ?? emptyDraw();
+  if (draw.roundCompleted) return null;
+  if (draw.openedCards.length >= cfg.winnersPerRound) return null;
+  if (draw.openedCards.some((c) => c.cardIndex === cardIndex)) return null;
+
+  const alreadyDrawn = new Set(draw.openedCards.map((c) => c.employeeId));
   const pool = state.employees.filter(
-    (e) => e.eligible && !alreadyDrawn.has(e.id),
+    (e) => e.location === loc && e.eligible && !alreadyDrawn.has(e.id),
   );
   if (pool.length === 0) return null;
 
   const winner = pool[Math.floor(Math.random() * pool.length)];
-  const order = state.openedCards.length + 1;
-  const willComplete = order === WINNERS_PER_ROUND;
+  const order = draw.openedCards.length + 1;
+  const willComplete = order === cfg.winnersPerRound;
 
   setState((s) => ({
     ...s,
-    openedCards: [...s.openedCards, { cardIndex, employeeId: winner.id, order }],
-    roundCompleted: willComplete,
+    drawByLocation: {
+      ...s.drawByLocation,
+      [loc]: {
+        openedCards: [...draw.openedCards, { cardIndex, employeeId: winner.id, order }],
+        roundCompleted: willComplete,
+      },
+    },
   }));
   return winner;
 }
 
 export function startNewRound() {
-  setState((s) => ({ ...s, openedCards: [], roundCompleted: false }));
+  const loc = state.selectedLocation;
+  setState((s) => ({
+    ...s,
+    drawByLocation: { ...s.drawByLocation, [loc]: emptyDraw() },
+  }));
 }
 
 export function saveRound() {
-  if (state.openedCards.length !== WINNERS_PER_ROUND) return;
-  const winners = state.openedCards
+  const loc = state.selectedLocation;
+  const cfg = LOCATIONS[loc];
+  const draw = state.drawByLocation[loc] ?? emptyDraw();
+  if (draw.openedCards.length !== cfg.winnersPerRound) return;
+
+  const winners = draw.openedCards
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((oc) => {
@@ -129,15 +190,18 @@ export function saveRound() {
   const round: LotteryRound = {
     id: `round_${Date.now().toString(36)}`,
     date: new Date().toISOString(),
+    location: loc,
     winners,
-    poolSize: state.employees.filter((e) => e.eligible).length,
+    poolSize: state.employees.filter((e) => e.location === loc && e.eligible).length,
   };
   const winnerIds = new Set(winners.map((w) => w.id));
 
   setState((s) => {
-    // 1. update existing blocked employees: add new winners to their seen sets, maybe unblock
-    const threshold = Math.ceil(UNBLOCK_THRESHOLD * (s.employees.length - 1));
+    const locEmployees = s.employees.filter((e) => e.location === loc);
+    const threshold = Math.ceil(UNBLOCK_THRESHOLD * Math.max(1, locEmployees.length - 1));
+
     const updated = s.employees.map((e) => {
+      if (e.location !== loc) return e;
       if (e.blockedUntilThresholdMet) {
         const seen = new Set(e.drawnSinceBlock);
         for (const wid of winnerIds) if (wid !== e.id) seen.add(wid);
@@ -154,7 +218,7 @@ export function saveRound() {
       }
       return e;
     });
-    // 2. mark new winners as blocked & bump counters
+
     const withWinners = updated.map((e) => {
       if (winnerIds.has(e.id)) {
         return {
@@ -168,31 +232,33 @@ export function saveRound() {
       }
       return e;
     });
-    // 3. move winners to end of list, preserving win order
-    const nonWinners = withWinners.filter((e) => !winnerIds.has(e.id));
+
+    // Reorder only within the location
+    const others = withWinners.filter((e) => e.location !== loc);
+    const locOnly = withWinners.filter((e) => e.location === loc);
+    const nonWinners = locOnly.filter((e) => !winnerIds.has(e.id));
     const winnersOrdered = winners
-      .map((w) => withWinners.find((e) => e.id === w.id)!)
+      .map((w) => locOnly.find((e) => e.id === w.id)!)
       .filter(Boolean);
 
     return {
       ...s,
-      employees: [...nonWinners, ...winnersOrdered],
+      employees: [...others, ...nonWinners, ...winnersOrdered],
       rounds: [round, ...s.rounds],
-      openedCards: [],
-      roundCompleted: false,
+      drawByLocation: { ...s.drawByLocation, [loc]: emptyDraw() },
     };
   });
 }
 
-export function resetEligibility() {
+export function resetEligibility(loc?: LocationId) {
+  const target = loc ?? state.selectedLocation;
   setState((s) => ({
     ...s,
-    employees: s.employees.map((e) => ({
-      ...e,
-      eligible: true,
-      blockedUntilThresholdMet: false,
-      drawnSinceBlock: [],
-    })),
+    employees: s.employees.map((e) =>
+      e.location === target
+        ? { ...e, eligible: true, blockedUntilThresholdMet: false, drawnSinceBlock: [] }
+        : e,
+    ),
   }));
 }
 
@@ -200,7 +266,7 @@ export function resetAll() {
   setState(() => initialState());
 }
 
-export function addEmployee(name: string, department: string) {
+export function addEmployee(name: string, department: string, location: LocationId) {
   if (!name.trim()) return;
   setState((s) => ({
     ...s,
@@ -210,6 +276,7 @@ export function addEmployee(name: string, department: string) {
         id: `emp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
         name: name.trim(),
         department: department.trim() || "—",
+        location,
         drawCount: 0,
         blockedUntilThresholdMet: false,
         drawnSinceBlock: [],
@@ -221,8 +288,4 @@ export function addEmployee(name: string, department: string) {
 
 export function removeEmployee(id: string) {
   setState((s) => ({ ...s, employees: s.employees.filter((e) => e.id !== id) }));
-}
-
-export function eligibleCount(s: LotteryState) {
-  return s.employees.filter((e) => e.eligible).length;
 }

@@ -1,3 +1,5 @@
+import type { LocationId } from "./locations";
+
 const firstNames = [
   "Anna", "Ben", "Clara", "David", "Emma", "Felix", "Greta", "Hannes",
   "Ida", "Jonas", "Klara", "Leo", "Mia", "Noah", "Olivia", "Paul",
@@ -23,6 +25,7 @@ export type SampleEmployee = {
   id: string;
   name: string;
   department: string;
+  location: LocationId;
   drawCount: number;
   lastWonRoundId?: string;
   blockedUntilThresholdMet: boolean;
@@ -30,7 +33,6 @@ export type SampleEmployee = {
   eligible: boolean;
 };
 
-// Deterministic PRNG so SSR/CSR match
 function mulberry32(seed: number) {
   return function () {
     let t = (seed += 0x6d2b79f5);
@@ -40,25 +42,23 @@ function mulberry32(seed: number) {
   };
 }
 
-export function generateSampleEmployees(count = 150): SampleEmployee[] {
-  const rand = mulberry32(42);
-  const used = new Set<string>();
+function generateForLocation(
+  count: number,
+  location: LocationId,
+  seed: number,
+  idPrefix: string,
+): SampleEmployee[] {
+  const rand = mulberry32(seed);
   const out: SampleEmployee[] = [];
   let i = 0;
   while (out.length < count) {
     const f = firstNames[Math.floor(rand() * firstNames.length)];
     const l = lastNames[Math.floor(rand() * lastNames.length)];
-    const name = `${f} ${l}`;
-    const key = `${name}-${i}`;
-    if (used.has(key)) {
-      i++;
-      continue;
-    }
-    used.add(key);
     out.push({
-      id: `emp_${i.toString(36)}_${Math.floor(rand() * 1e6).toString(36)}`,
-      name,
+      id: `${idPrefix}_${i.toString(36)}_${Math.floor(rand() * 1e6).toString(36)}`,
+      name: `${f} ${l}`,
       department: departments[Math.floor(rand() * departments.length)],
+      location,
       drawCount: 0,
       blockedUntilThresholdMet: false,
       drawnSinceBlock: [],
@@ -67,4 +67,11 @@ export function generateSampleEmployees(count = 150): SampleEmployee[] {
     i++;
   }
   return out;
+}
+
+export function generateSampleEmployees(): SampleEmployee[] {
+  return [
+    ...generateForLocation(150, "hamburg", 42, "hh"),
+    ...generateForLocation(50, "duesseldorf", 99, "dd"),
+  ];
 }

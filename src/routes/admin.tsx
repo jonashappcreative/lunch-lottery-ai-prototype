@@ -8,9 +8,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { LocationSwitcher } from "@/components/LocationSwitcher";
 import {
   useLottery, addEmployee, removeEmployee, resetAll, resetEligibility,
 } from "@/lib/lottery-store";
+import { LOCATION_LIST, type LocationId } from "@/lib/locations";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload } from "lucide-react";
 
@@ -28,21 +30,30 @@ function AdminPage() {
   const state = useLottery();
   const [name, setName] = useState("");
   const [dept, setDept] = useState("");
+  const [newLoc, setNewLoc] = useState<LocationId>(state.selectedLocation);
   const [filter, setFilter] = useState("");
+
+  const employeesInLocation = useMemo(
+    () => state.employees.filter((e) => e.location === state.selectedLocation),
+    [state.employees, state.selectedLocation],
+  );
 
   const filtered = useMemo(() => {
     const f = filter.trim().toLowerCase();
-    if (!f) return state.employees;
-    return state.employees.filter(
+    if (!f) return employeesInLocation;
+    return employeesInLocation.filter(
       (e) => e.name.toLowerCase().includes(f) || e.department.toLowerCase().includes(f),
     );
-  }, [state.employees, filter]);
+  }, [employeesInLocation, filter]);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10 space-y-8">
-      <div>
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Admin</h1>
-        <p className="text-muted-foreground mt-1">Mitarbeitende & Daten verwalten</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Admin</h1>
+          <p className="text-muted-foreground mt-1">Mitarbeitende & Daten verwalten</p>
+        </div>
+        <LocationSwitcher />
       </div>
 
       <Card className="p-5">
@@ -50,10 +61,20 @@ function AdminPage() {
         <div className="flex flex-wrap gap-2">
           <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="max-w-xs" />
           <Input placeholder="Department (optional)" value={dept} onChange={(e) => setDept(e.target.value)} className="max-w-xs" />
+          <select
+            value={newLoc}
+            onChange={(e) => setNewLoc(e.target.value as LocationId)}
+            className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+            aria-label="Standort"
+          >
+            {LOCATION_LIST.map((l) => (
+              <option key={l.id} value={l.id}>{l.label}</option>
+            ))}
+          </select>
           <Button
             onClick={() => {
               if (!name.trim()) return toast.error("Name fehlt");
-              addEmployee(name, dept);
+              addEmployee(name, dept, newLoc);
               setName(""); setDept("");
               toast.success("Hinzugefügt");
             }}
@@ -117,7 +138,7 @@ function AdminPage() {
 
       <div>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h2 className="text-xl font-bold">Mitarbeitende ({state.employees.length})</h2>
+          <h2 className="text-xl font-bold">Mitarbeitende {state.selectedLocation === "hamburg" ? "Hamburg" : "Düsseldorf"} ({employeesInLocation.length})</h2>
           <Input placeholder="Suchen…" value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-xs" />
         </div>
         <Card className="overflow-hidden">

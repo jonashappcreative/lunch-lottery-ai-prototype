@@ -25,6 +25,7 @@ export type Database = {
           eligible: boolean
           id: string
           last_won_round_id: string | null
+          location: string
           name: string
           sort_order: number
           updated_at: string
@@ -39,6 +40,7 @@ export type Database = {
           eligible?: boolean
           id?: string
           last_won_round_id?: string | null
+          location?: string
           name: string
           sort_order?: number
           updated_at?: string
@@ -53,6 +55,7 @@ export type Database = {
           eligible?: boolean
           id?: string
           last_won_round_id?: string | null
+          location?: string
           name?: string
           sort_order?: number
           updated_at?: string
@@ -109,18 +112,21 @@ export type Database = {
           created_at: string
           drawn_at: string
           id: string
+          location: string
           pool_size: number
         }
         Insert: {
           created_at?: string
           drawn_at?: string
           id?: string
+          location?: string
           pool_size: number
         }
         Update: {
           created_at?: string
           drawn_at?: string
           id?: string
+          location?: string
           pool_size?: number
         }
         Relationships: []
