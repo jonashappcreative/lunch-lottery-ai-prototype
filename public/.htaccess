@@ -1,0 +1,31 @@
+# Static SPA hosting on Apache (e.g. All-Inkl).
+# Vite copies everything in public/ into dist/, so this ships with the build.
+
+# --- Single-page-app fallback ---
+# Serve real files/directories as-is; route every other request to index.html
+# so client-side routes (/draw, /history, ...) survive refresh and deep links.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# --- Compression ---
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# --- Caching ---
+<IfModule mod_headers.c>
+  # Hashed build assets are immutable — cache them hard.
+  <FilesMatch "\.(js|css|woff2?|png|jpe?g|gif|svg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # Never cache the HTML shell, so new uploads are picked up immediately.
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
