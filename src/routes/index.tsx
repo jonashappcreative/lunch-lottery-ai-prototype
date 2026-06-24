@@ -3,7 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { LocationSwitcher } from "@/components/LocationSwitcher";
 import {
-  useLottery, eligibleCount, currentDraw, currentLocationConfig,
+  useLottery,
+  eligibleCount,
+  currentDraw,
+  currentLocationConfig,
   locationEmployees,
 } from "@/lib/lottery-store";
 import { ArrowRight, History, Sparkles, Users } from "lucide-react";
@@ -38,8 +41,9 @@ function Index() {
         </span>
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight">Lunch Lottery</h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-          {cfg.label}: Wählt nacheinander {cfg.winnersPerRound === 1 ? "eine Karte" : `${cfg.winnersPerRound} Karten`} aus.
-          Jede Karte enthüllt eine Gewinner:in für euer nächstes gemeinsames Lunch.
+          {cfg.label}: Wählt nacheinander{" "}
+          {cfg.winnersPerRound === 1 ? "eine Karte" : `${cfg.winnersPerRound} Karten`} aus. Jede
+          Karte enthüllt eine Gewinner:in für euer nächstes gemeinsames Lunch.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
           <Button asChild size="lg" className="text-base h-12 px-6">
@@ -48,7 +52,9 @@ function Index() {
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="text-base h-12 px-6">
-            <Link to="/history"><History className="mr-2 h-5 w-5" /> Historie</Link>
+            <Link to="/history">
+              <History className="mr-2 h-5 w-5" /> Historie
+            </Link>
           </Button>
         </div>
         <p className="text-sm text-muted-foreground pt-2">
@@ -57,15 +63,29 @@ function Index() {
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4 mt-16">
-        <StatCard icon={<Users className="h-5 w-5" />} label={`Mitarbeitende ${cfg.label}`} value={total} />
-        <StatCard icon={<Sparkles className="h-5 w-5" />} label="Verfügbar (eligible)" value={eligible} />
-        <StatCard icon={<History className="h-5 w-5" />} label={`Runden ${cfg.label}`} value={recent.length} />
+        <StatCard
+          icon={<Users className="h-5 w-5" />}
+          label={`Mitarbeitende ${cfg.label}`}
+          value={total}
+        />
+        <StatCard
+          icon={<Sparkles className="h-5 w-5" />}
+          label="Verfügbar (eligible)"
+          value={eligible}
+        />
+        <StatCard
+          icon={<History className="h-5 w-5" />}
+          label={`Runden ${cfg.label}`}
+          value={recent.length}
+        />
       </div>
 
       <section className="mt-16">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold tracking-tight">Letzte Runden</h2>
-          <Link to="/history" className="text-sm text-primary hover:underline">Alle ansehen</Link>
+          <Link to="/history" className="text-sm text-primary hover:underline">
+            Alle ansehen
+          </Link>
         </div>
         {recent.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
@@ -76,11 +96,17 @@ function Index() {
             {recent.map((r) => (
               <Card key={r.id} className="p-4">
                 <div className="text-sm text-muted-foreground mb-2">
-                  {new Date(r.date).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })}
+                  {new Date(r.date).toLocaleString("de-DE", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {r.winners.map((w) => (
-                    <span key={w.id} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                    <span
+                      key={w.id}
+                      className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full"
+                    >
                       {w.name}
                     </span>
                   ))}
@@ -97,7 +123,9 @@ function Index() {
 function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: number }) {
   return (
     <Card className="p-5 flex items-center gap-4">
-      <div className="grid place-items-center h-12 w-12 rounded-xl bg-primary/10 text-primary">{icon}</div>
+      <div className="grid place-items-center h-12 w-12 rounded-xl bg-primary/10 text-primary">
+        {icon}
+      </div>
       <div>
         <div className="text-3xl font-bold">{value}</div>
         <div className="text-sm text-muted-foreground">{label}</div>

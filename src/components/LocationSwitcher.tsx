@@ -7,10 +7,7 @@ export function LocationSwitcher({ className }: { className?: string }) {
   const { selectedLocation } = useLottery();
   return (
     <div
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full bg-muted p-1",
-        className,
-      )}
+      className={cn("inline-flex items-center gap-1 rounded-full bg-muted p-1", className)}
       role="tablist"
       aria-label="Standort wählen"
     >

@@ -4,13 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { LocationSwitcher } from "@/components/LocationSwitcher";
 import {
-  useLottery, addEmployee, removeEmployee, resetAll, resetEligibility,
+  useLottery,
+  addEmployee,
+  removeEmployee,
+  resetAll,
+  resetEligibility,
 } from "@/lib/lottery-store";
 import { LOCATION_LIST, type LocationId } from "@/lib/locations";
 import { toast } from "sonner";
@@ -59,8 +69,18 @@ function AdminPage() {
       <Card className="p-5">
         <h2 className="font-semibold mb-3">Neue:n Mitarbeitende:n hinzufügen</h2>
         <div className="flex flex-wrap gap-2">
-          <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="max-w-xs" />
-          <Input placeholder="Department (optional)" value={dept} onChange={(e) => setDept(e.target.value)} className="max-w-xs" />
+          <Input
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="max-w-xs"
+          />
+          <Input
+            placeholder="Department (optional)"
+            value={dept}
+            onChange={(e) => setDept(e.target.value)}
+            className="max-w-xs"
+          />
           <select
             value={newLoc}
             onChange={(e) => setNewLoc(e.target.value as LocationId)}
@@ -68,14 +88,17 @@ function AdminPage() {
             aria-label="Standort"
           >
             {LOCATION_LIST.map((l) => (
-              <option key={l.id} value={l.id}>{l.label}</option>
+              <option key={l.id} value={l.id}>
+                {l.label}
+              </option>
             ))}
           </select>
           <Button
             onClick={() => {
               if (!name.trim()) return toast.error("Name fehlt");
               addEmployee(name, dept, newLoc);
-              setName(""); setDept("");
+              setName("");
+              setDept("");
               toast.success("Hinzugefügt");
             }}
           >
@@ -106,7 +129,12 @@ function AdminPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { resetEligibility(); toast.success("Sperren aufgehoben"); }}>
+                <AlertDialogAction
+                  onClick={() => {
+                    resetEligibility();
+                    toast.success("Sperren aufgehoben");
+                  }}
+                >
                   Bestätigen
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -121,13 +149,18 @@ function AdminPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Alle Daten löschen?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Mitarbeiterliste & Historie werden auf das Beispiel-Dataset (150 Personen) zurückgesetzt.
-                  Dieser Vorgang kann nicht rückgängig gemacht werden.
+                  Mitarbeiterliste & Historie werden auf das Beispiel-Dataset (150 Personen)
+                  zurückgesetzt. Dieser Vorgang kann nicht rückgängig gemacht werden.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                <AlertDialogAction onClick={() => { resetAll(); toast.success("Daten zurückgesetzt"); }}>
+                <AlertDialogAction
+                  onClick={() => {
+                    resetAll();
+                    toast.success("Daten zurückgesetzt");
+                  }}
+                >
                   Endgültig zurücksetzen
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -138,8 +171,16 @@ function AdminPage() {
 
       <div>
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <h2 className="text-xl font-bold">Mitarbeitende {state.selectedLocation === "hamburg" ? "Hamburg" : "Düsseldorf"} ({employeesInLocation.length})</h2>
-          <Input placeholder="Suchen…" value={filter} onChange={(e) => setFilter(e.target.value)} className="max-w-xs" />
+          <h2 className="text-xl font-bold">
+            Mitarbeitende {state.selectedLocation === "hamburg" ? "Hamburg" : "Düsseldorf"} (
+            {employeesInLocation.length})
+          </h2>
+          <Input
+            placeholder="Suchen…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="max-w-xs"
+          />
         </div>
         <Card className="overflow-hidden">
           <div className="max-h-[60vh] overflow-auto">
@@ -175,7 +216,10 @@ function AdminPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => { removeEmployee(e.id); toast(`${e.name} entfernt`); }}
+                        onClick={() => {
+                          removeEmployee(e.id);
+                          toast(`${e.name} entfernt`);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -183,9 +227,11 @@ function AdminPage() {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    Keine Mitarbeitenden gefunden.
-                  </td></tr>
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
+                      Keine Mitarbeitenden gefunden.
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>

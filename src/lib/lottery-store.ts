@@ -1,21 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { generateSampleEmployees, type SampleEmployee } from "./sample-employees";
-import {
-  LOCATIONS,
-  UNBLOCK_THRESHOLD,
-  type LocationConfig,
-  type LocationId,
-} from "./locations";
-import { supabase } from "@/integrations/supabase/client";
-
-const LOC_TO_DB: Record<LocationId, string> = {
-  hamburg: "Hamburg",
-  duesseldorf: "Düsseldorf",
-};
-const DB_TO_LOC: Record<string, LocationId> = {
-  Hamburg: "hamburg",
-  "Düsseldorf": "duesseldorf",
-};
+import { LOCATIONS, UNBLOCK_THRESHOLD, type LocationConfig, type LocationId } from "./locations";
 
 export type Employee = SampleEmployee;
 
@@ -106,55 +91,6 @@ function hydrate() {
   hydrated = true;
   state = load();
   emit();
-  void loadFromSupabase();
-}
-
-async function loadFromSupabase() {
-  try {
-    const [empRes, roundsRes, winnersRes] = await Promise.all([
-      supabase.from("employees").select("*").order("sort_order", { ascending: true }),
-      supabase.from("rounds").select("*").order("drawn_at", { ascending: false }),
-      supabase.from("round_winners").select("*").order("reveal_order", { ascending: true }),
-    ]);
-    if (empRes.error || !empRes.data?.length) return;
-
-    const employees: Employee[] = empRes.data.map((e) => ({
-      id: e.id,
-      name: e.name,
-      department: e.department,
-      location: DB_TO_LOC[e.location] ?? "hamburg",
-      drawCount: e.draw_count,
-      eligible: e.eligible,
-      blockedUntilThresholdMet: e.blocked_until_threshold_met,
-      drawnSinceBlock: (e.drawn_since_block as string[]) ?? [],
-      lastWonRoundId: e.last_won_round_id ?? undefined,
-    }));
-
-    const winnersByRound = new Map<string, typeof winnersRes.data>();
-    for (const w of winnersRes.data ?? []) {
-      const arr = winnersByRound.get(w.round_id) ?? [];
-      arr.push(w);
-      winnersByRound.set(w.round_id, arr);
-    }
-    const rounds: LotteryRound[] = (roundsRes.data ?? []).map((r) => ({
-      id: r.id,
-      date: r.drawn_at,
-      location: DB_TO_LOC[r.location] ?? "hamburg",
-      poolSize: r.pool_size,
-      winners: (winnersByRound.get(r.id) ?? [])
-        .slice()
-        .sort((a, b) => a.reveal_order - b.reveal_order)
-        .map((w) => ({
-          id: w.employee_id,
-          name: w.employee_name,
-          department: w.employee_department,
-        })),
-    }));
-
-    setState((s) => ({ ...s, employees, rounds }));
-  } catch {
-    /* ignore — keep local state */
-  }
 }
 
 export function useLottery(): LotteryState {
@@ -247,9 +183,8 @@ export function saveRound() {
       return { id: e.id, name: e.name, department: e.department, order: oc.order };
     });
   const poolSize = state.employees.filter((e) => e.location === loc && e.eligible).length;
-  const localRoundId = `round_${Date.now().toString(36)}`;
   const round: LotteryRound = {
-    id: localRoundId,
+    id: `round_${Date.now().toString(36)}`,
     date: new Date().toISOString(),
     location: loc,
     winners: winners.map(({ id, name, department }) => ({ id, name, department })),
@@ -297,9 +232,7 @@ export function saveRound() {
     const others = withWinners.filter((e) => e.location !== loc);
     const locOnly = withWinners.filter((e) => e.location === loc);
     const nonWinners = locOnly.filter((e) => !winnerIds.has(e.id));
-    const winnersOrdered = winners
-      .map((w) => locOnly.find((e) => e.id === w.id)!)
-      .filter(Boolean);
+    const winnersOrdered = winners.map((w) => locOnly.find((e) => e.id === w.id)!).filter(Boolean);
 
     return {
       ...s,
@@ -308,65 +241,6 @@ export function saveRound() {
       drawByLocation: { ...s.drawByLocation, [loc]: emptyDraw() },
     };
   });
-
-  void persistRound(loc, winners, poolSize, localRoundId);
-}
-
-async function persistRound(
-  loc: LocationId,
-  winners: { id: string; name: string; department: string; order: number }[],
-  poolSize: number,
-  localRoundId: string,
-) {
-  try {
-    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!winners.every((w) => uuidRe.test(w.id))) return;
-
-    const { data: roundRow, error: rErr } = await supabase
-      .from("rounds")
-      .insert({ location: LOC_TO_DB[loc], pool_size: poolSize })
-      .select("id")
-      .single();
-    if (rErr || !roundRow) return;
-
-    const dbRoundId = roundRow.id as string;
-
-    await supabase.from("round_winners").insert(
-      winners.map((w) => ({
-        round_id: dbRoundId,
-        employee_id: w.id,
-        employee_name: w.name,
-        employee_department: w.department,
-        reveal_order: w.order,
-      })),
-    );
-
-    await Promise.all(
-      winners.map((w) => {
-        const dc = state.employees.find((e) => e.id === w.id)?.drawCount ?? 1;
-        return supabase
-          .from("employees")
-          .update({
-            draw_count: dc,
-            last_won_round_id: dbRoundId,
-            blocked_until_threshold_met: true,
-            drawn_since_block: [],
-            eligible: false,
-          })
-          .eq("id", w.id);
-      }),
-    );
-
-    setState((s) => ({
-      ...s,
-      rounds: s.rounds.map((r) => (r.id === localRoundId ? { ...r, id: dbRoundId } : r)),
-      employees: s.employees.map((e) =>
-        e.lastWonRoundId === localRoundId ? { ...e, lastWonRoundId: dbRoundId } : e,
-      ),
-    }));
-  } catch {
-    /* ignore */
-  }
 }
 
 export function resetEligibility(loc?: LocationId) {

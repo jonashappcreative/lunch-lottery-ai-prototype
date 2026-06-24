@@ -1,6 +1,20 @@
 import {
-  Pizza, Popcorn, Croissant, Cookie, Sandwich, Salad, IceCream, Coffee,
-  Apple, Soup, Cake, CupSoda, Beef, Carrot, Cherry, Citrus,
+  Pizza,
+  Popcorn,
+  Croissant,
+  Cookie,
+  Sandwich,
+  Salad,
+  IceCream,
+  Coffee,
+  Apple,
+  Soup,
+  Cake,
+  CupSoda,
+  Beef,
+  Carrot,
+  Cherry,
+  Citrus,
   type LucideIcon,
 } from "lucide-react";
 

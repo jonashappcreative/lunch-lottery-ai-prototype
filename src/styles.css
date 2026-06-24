@@ -69,8 +69,10 @@
   --input: oklch(0.92 0.015 190);
   --ring: oklch(0.65 0.14 180);
 
-  --shadow-card: 0 4px 14px -4px oklch(0.65 0.14 180 / 0.18), 0 2px 6px -2px oklch(0.65 0.14 180 / 0.1);
-  --shadow-elevated: 0 20px 50px -20px oklch(0.65 0.14 180 / 0.35), 0 8px 20px -10px oklch(0.65 0.14 180 / 0.25);
+  --shadow-card:
+    0 4px 14px -4px oklch(0.65 0.14 180 / 0.18), 0 2px 6px -2px oklch(0.65 0.14 180 / 0.1);
+  --shadow-elevated:
+    0 20px 50px -20px oklch(0.65 0.14 180 / 0.35), 0 8px 20px -10px oklch(0.65 0.14 180 / 0.25);
 }
 
 .dark {
@@ -91,7 +93,7 @@
     color: var(--color-foreground);
     background-image:
       radial-gradient(circle at 10% 0%, oklch(0.72 0.16 160 / 0.08), transparent 50%),
-      radial-gradient(circle at 90% 100%, oklch(0.65 0.14 180 / 0.10), transparent 55%);
+      radial-gradient(circle at 90% 100%, oklch(0.65 0.14 180 / 0.1), transparent 55%);
     background-attachment: fixed;
   }
 }
@@ -104,7 +106,7 @@
   position: relative;
   width: 100%;
   height: 100%;
-  transition: transform 0.7s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   transform-style: preserve-3d;
 }
 .flip-card.flipped .flip-card-inner {
@@ -122,8 +124,18 @@
 }
 
 @keyframes pop-in {
-  0% { transform: scale(0.7); opacity: 0; }
-  60% { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
 }
-.animate-pop-in { animation: pop-in 0.5s ease-out; }
+.animate-pop-in {
+  animation: pop-in 0.5s ease-out;
+}

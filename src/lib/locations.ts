@@ -28,9 +28,6 @@ export const LOCATIONS: Record<LocationId, LocationConfig> = {
   },
 };
 
-export const LOCATION_LIST: LocationConfig[] = [
-  LOCATIONS.hamburg,
-  LOCATIONS.duesseldorf,
-];
+export const LOCATION_LIST: LocationConfig[] = [LOCATIONS.hamburg, LOCATIONS.duesseldorf];
 
 export const UNBLOCK_THRESHOLD = 0.8;

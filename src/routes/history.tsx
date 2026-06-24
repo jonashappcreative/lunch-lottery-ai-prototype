@@ -24,7 +24,9 @@ function HistoryPage() {
       <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Historie · {cfg.label}</h1>
-          <p className="text-muted-foreground mt-1">{rounds.length} gespeicherte Runden · {cfg.cadence}</p>
+          <p className="text-muted-foreground mt-1">
+            {rounds.length} gespeicherte Runden · {cfg.cadence}
+          </p>
         </div>
         <LocationSwitcher />
       </div>
@@ -46,7 +48,10 @@ function HistoryPage() {
                     {LOCATIONS[r.location].label}
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    {new Date(r.date).toLocaleString("de-DE", { dateStyle: "long", timeStyle: "short" })}
+                    {new Date(r.date).toLocaleString("de-DE", {
+                      dateStyle: "long",
+                      timeStyle: "short",
+                    })}
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground">Pool: {r.poolSize}</span>

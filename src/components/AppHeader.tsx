@@ -27,7 +27,9 @@ export function AppHeader() {
                 key={item.to}
                 to={item.to}
                 className="px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                activeProps={{ className: "px-3 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary" }}
+                activeProps={{
+                  className: "px-3 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary",
+                }}
                 activeOptions={{ exact: item.to === "/" }}
               >
                 {item.label}
@@ -39,4 +41,3 @@ export function AppHeader() {
     </header>
   );
 }
-
